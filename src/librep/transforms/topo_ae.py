@@ -13,22 +13,29 @@ import pickle
 import shutil
 from copy import deepcopy
 from torch.utils.data import TensorDataset, DataLoader
+import os
 
 
 class TopologicalDimensionalityReduction(Transform):
 
     def __init__(
         self, ae_model='ConvolutionalAutoencoder', ae_kwargs=None,
-        lam=1., patience=None, num_epochs=500, batch_size=64,
+        lam=1., patience=None,
+        num_epochs=500,
+        min_epochs=100,
+        batch_size=64,
         cuda_device_name='cuda:0',
         latent_dim=10,
+        file_to_load=None,
         save_dir='data/', save_tag=0, save_frequency=None, verbose=False
     ):
+        self.file_to_load = file_to_load
         self.save_dir = save_dir
         self.save_tag = save_tag
         self.save_frequency = save_frequency
         self.patience = patience
         self.num_epochs = num_epochs
+        self.min_epochs = min_epochs
         self.model_name = ae_model
         self.model_lambda = lam
         self.model_latent_dim = latent_dim
@@ -38,6 +45,7 @@ class TopologicalDimensionalityReduction(Transform):
         self.optimizer_lr = ae_kwargs['optimizer_lr']
         del ae_kwargs['optimizer_weight_decay']
         del ae_kwargs['optimizer_lr']
+        
         # Setting cuda device
         self.cuda_device = torch.device(cuda_device_name)
         self.batch_size = batch_size
@@ -125,7 +133,14 @@ class TopologicalDimensionalityReduction(Transform):
             autoencoder_model=self.model_name,
             lam=self.model_lambda, ae_kwargs=self.ae_kwargs
         )
-        # self.model_best_state_dict = deepcopy(self.model.state_dict())
+        if self.file_to_load:
+            file_handler = open(self.file_to_load, 'rb')
+            model_state_dict = pickle.load(file_handler)
+            file_handler.close()
+            self.model.load_state_dict(model_state_dict)
+            self.model.eval()
+            self.model = self.model.to(self.cuda_device)
+            return
         self.model = self.model.to(self.cuda_device)
         # Optimizer
         # self.optimizer = Adam(self.model.parameters(), lr=1e-3, weight_decay=1e-5)
@@ -156,6 +171,8 @@ class TopologicalDimensionalityReduction(Transform):
         self.val_topo_error = []
         # Setting cuda
         # cuda0 = torch.device('cuda:0')
+        
+        print('CURDIR', os.path.abspath(os.path.curdir))
         
         for epoch in tqdm(range(self.num_epochs)):
             patience_counter += 1
@@ -197,14 +214,23 @@ class TopologicalDimensionalityReduction(Transform):
                 self.model_best_state_dict = deepcopy(self.model.state_dict())
                 # Update max_loss
                 loss_threshold = loss_per_epoch
+                # Save the model
+                if self.save_frequency == 'best':
+                    os.makedirs(self.save_dir, exist_ok=True)
+                    with open(f'{self.save_dir}/{self.save_tag}_epoch_{epoch}.pkl', 'wb') as f:
+                        pickle.dump(self.model_best_state_dict, f)
+                
             # If verbose, print the results for the current epoch
             if self.verbose:
                 print(f'Epoch:{epoch+1}, P:{patience_counter}, V Loss:{self.current["val_error"]:.4f}, Loss-ae:{self.current["val_recon_error"]:.4f}, Loss-topo:{self.current["val_topo_error"]:.4f}')
                 print(f'Epoch:{epoch+1}, P:{patience_counter}, T Loss:{self.current["train_error"]:.4f}, Loss-ae:{self.current["train_recon_error"]:.4f}, Loss-topo:{self.current["train_topo_error"]:.4f}')
             # Handle patience
-            if self.patience and patience_counter > self.patience:
+            if epoch >= self.min_epochs and self.patience and patience_counter > self.patience:
                 break
         self.model.load_state_dict(self.model_best_state_dict)
+        if self.save_frequency:
+            with open(f'{self.save_dir}/{self.save_tag}_history.sml', 'wb') as f:
+                pickle.dump(self.history, f)
 
     def plot_training(self, title_plot=None):
         fig, ax = plt.subplots(figsize=(10,10))
@@ -344,10 +370,12 @@ class ConvTAETransform(TopologicalDimensionalityReduction):
                  model_lambda=1,
                  patience=None,
                  num_epochs=2000,
+                 min_epochs=100,
                  latent_dim=2,
                  batch_size=64,
                  cuda_device_name='cuda:0',
                  extra_properties={},
+                 file_to_load=None,
                  save_dir='data/', save_tag=0, save_frequency=None):
         ae_kwargs = {
             'latent_dim': latent_dim,
@@ -361,9 +389,11 @@ class ConvTAETransform(TopologicalDimensionalityReduction):
             lam=model_lambda,
             patience=patience,
             num_epochs=num_epochs,
+            min_epochs=min_epochs,
             batch_size=batch_size,
             cuda_device_name=cuda_device_name,
             latent_dim=latent_dim,
+            file_to_load=file_to_load,
             save_dir=save_dir,
             save_tag=save_tag,
             save_frequency=save_frequency
