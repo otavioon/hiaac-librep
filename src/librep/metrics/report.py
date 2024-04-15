@@ -5,6 +5,8 @@ from sklearn.metrics import (
     accuracy_score,
     f1_score,
     balanced_accuracy_score,
+    recall_score,
+    precision_score,
     confusion_matrix,
     ConfusionMatrixDisplay
 )
@@ -20,6 +22,9 @@ class ClassificationReport(SupervisedEvaluator):
         use_accuracy: bool = True,
         use_f1_score: bool = True,
         use_balanced_accuracy: bool = False,
+        use_precision: bool = True,
+        use_recall: bool = True,
+        use_geometric_mean: bool = True,
         use_confusion_matrix: bool = True,
         use_classification_report: bool = False,
         plot_confusion_matrix: bool = True,
@@ -32,6 +37,9 @@ class ClassificationReport(SupervisedEvaluator):
         self.use_accuracy = use_accuracy
         self.use_f1_score = use_f1_score
         self.use_balanced_accuracy = use_balanced_accuracy
+        self.use_precision = use_precision
+        self.use_recall = use_recall
+        self.use_geometric_mean = use_geometric_mean
         self.use_confusion_matrix = use_confusion_matrix
         self.use_classification_report = use_classification_report
         self.plot_confusion_matrix = plot_confusion_matrix
@@ -66,6 +74,28 @@ class ClassificationReport(SupervisedEvaluator):
         if self.use_balanced_accuracy:
             res = balanced_accuracy_score(y_true, y_pred)
             result["balanced accuracy"] = float(res)
+        if self.use_precision:
+            res = precision_score(y_true, y_pred, average="weighted")
+            result["precision (weighted)"] = float(res)
+
+            res = precision_score(y_true, y_pred, average="micro")
+            result["precision (micro)"] = float(res)
+
+            res = precision_score(y_true, y_pred, average="macro")
+            result["precision (macro)"] = float(res)
+        if self.use_recall:
+            res = recall_score(y_true, y_pred, average="weighted")
+            result["recall (weighted)"] = float(res)
+
+            res = recall_score(y_true, y_pred, average="micro")
+            result["recall (micro)"] = float(res)
+
+            res = recall_score(y_true, y_pred, average="macro")
+            result["recall (macro)"] = float(res)
+
+        if self.use_geeometric_mean:
+            res = np.sqrt(recall_score(y_true, y_pred, average="weighted") * precision_score(y_true, y_pred, average="weighted"))
+            result["geometric mean"] = float(res)
 
         if self.use_confusion_matrix:
             res = confusion_matrix(y_true, y_pred)
