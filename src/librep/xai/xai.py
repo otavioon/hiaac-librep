@@ -28,7 +28,8 @@ from tqdm import tqdm
 # Function to load the dataset
 ############################################################################################################
 def load_dataset(
-    dataset_name: str,
+    dst_train: str,
+    dst_test: str,
     reduce_on: str,
     normalization: str = None,
     path: Path = Path("../reducer_experiments/results/execution/transformed_data"),
@@ -39,8 +40,10 @@ def load_dataset(
 
     Parameters
     ----------
-    dataset_name: str
-        The name of the dataset
+    dst_train: str
+        The name of the train dataset
+    dst_test: str
+        The name of the test dataset
     reduce_on: str
         The name of the modality on which the dataset is reduced
     normalization: str
@@ -55,7 +58,8 @@ def load_dataset(
     test: Dataset
         The test dataset
     """
-    path = path / f"{dataset_name}-{reduce_on}"
+    path = path / f"{dst_train}_{dst_test}_{reduce_on}"
+    print(path)
 
     # Let's read files from the directory path
     with open(path / "train.pkl", "rb") as f:
@@ -513,7 +517,8 @@ def lime_values_per_feature(
 ############################################################################################################
 def calc_oracle_values(
     classifier: str,
-    dataset: str,
+    dst_train: str,
+    dst_test: str,
     reduce: str,
     latent_dim: int = 24,
     columns_to_remove: List[int] = [],
@@ -529,8 +534,10 @@ def calc_oracle_values(
     ----------
     classifier: str
         The name of the classifier
-    dataset: str
-        The name of the dataset
+    dst_train: str
+        The name of the train dataset
+    dst_test: str
+        The name of the test dataset
     reduce: str
         The name of the modality on which the dataset is reduced
     latent_dim: int
@@ -554,7 +561,7 @@ def calc_oracle_values(
     accuracies = []
     for dim in range(latent_dim):
         train, test = load_dataset(
-            dataset, reduce, normalization=normalization, path=Path(data_path)
+            dst_train, dst_test, reduce, normalization=None, path=Path(data_path)
         )
         if columns_to_remove != []:
             train.X = np.delete(train.X, columns_to_remove, axis=1)
