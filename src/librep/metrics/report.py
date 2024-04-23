@@ -11,6 +11,7 @@ from sklearn.metrics import (
     ConfusionMatrixDisplay
 )
 import matplotlib.pyplot as plt
+import numpy as np
 
 from librep.base.evaluators import SupervisedEvaluator
 from librep.config.type_definitions import ArrayLike, PathLike
