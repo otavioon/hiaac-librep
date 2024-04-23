@@ -59,7 +59,6 @@ def load_dataset(
         The test dataset
     """
     path = path / f"{dst_train}_{dst_test}_{reduce_on}"
-    print(path)
 
     # Let's read files from the directory path
     with open(path / "train.pkl", "rb") as f:
