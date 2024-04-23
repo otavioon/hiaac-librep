@@ -93,7 +93,7 @@ class ClassificationReport(SupervisedEvaluator):
             res = recall_score(y_true, y_pred, average="macro")
             result["recall (macro)"] = float(res)
 
-        if self.use_geeometric_mean:
+        if self.use_geometric_mean:
             res = np.sqrt(recall_score(y_true, y_pred, average="weighted") * precision_score(y_true, y_pred, average="weighted"))
             result["geometric mean"] = float(res)
 
