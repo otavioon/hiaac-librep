@@ -244,7 +244,7 @@ def calc_shap_values(model, test: PandasMultiModalDataset) -> np.ndarray:
 # Functions to filter the SHAP values
 ############################################################################################################
 def shap_values_per_feature(
-    shap_values, activities: List[int], num_features: int = 24
+    shap_values, activities: List[int]
 ) -> pd.DataFrame:
     """This function calculates the shap values for each feature, for each activity.
     For each activity, the shap values from a subset are the absolute average of the shap values of all samples in the subset.
@@ -256,25 +256,36 @@ def shap_values_per_feature(
         The shap values for each sample in the test dataset
     activities: List[int]
         The list of activities
-    num_features: int
-        The number of features
+
 
     Returns
     -------
     df: pd.DataFrame
         The dataframe containing the shap values for each feature
     """
-    fi = {
-        f"feature {i}": np.sum(
-            [
-                np.mean(np.abs(shap_values[j][:, i]))
-                for j, activity in enumerate(activities)
-            ]
-        )
-        for i in range(num_features)
-    }
 
-    df = pd.DataFrame(fi, index=[0])
+    # Define the number of features
+    num_features = shap_values[0].shape[1]
+
+    values = {f'feature {i}': 0 for i in range(num_features)}
+    for i in range(num_features):
+        values[f'feature {i}'] = np.sum(
+            [np.abs(shap_values[j][:, i]).mean() for j in range(len(shap_values))]
+        )
+
+
+    # fi = {
+    #     f"feature {i}": np.sum(
+    #         [
+    #             np.mean(np.abs(shap_values[j][:, i]))
+    #             for j, activity in enumerate(activities)
+    #         ]
+    #     )
+    #     for i in range(num_features)
+    # }
+
+    # df = pd.DataFrame(fi, index=[0])
+    df = pd.DataFrame(values, index=[0])
     return df
 
 
@@ -294,13 +305,17 @@ def shap_values_per_class(shap_values, activities: List[int]) -> pd.DataFrame:
     df: pd.DataFrame
         The dataframe containing the shap values for each feature
     """
-    keys = ["activity"] + [f"feature {i}" for i in range(24)]
+
+    # Define the number of features
+    num_features = shap_values[0].shape[1]
+
+    keys = ["activity"] + [f"feature {i}" for i in range(num_features)]
 
     fi = {key: None for key in keys}
     fis = []
     for j, activity in enumerate(activities):
         fi["activity"] = activity
-        for i in range(24):
+        for i in range(num_features):
             fi[f"feature {i}"] = np.mean(np.abs(shap_values[j][:, i]))
         fis.append(fi.copy())
 
