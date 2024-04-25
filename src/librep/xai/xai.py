@@ -354,7 +354,7 @@ def calc_lime_values(
     # This function calculates the lime values for each sample in the test dataset
     lime_values = []
     num_features = train.X.shape[1]
-    features_names = [f"feature_{i}" for i in range(num_features)]
+    features_names = [f"f-{i}" for i in range(num_features)]
     explainer = lime_tabular.LimeTabularExplainer(
         train.X,
         feature_names=features_names,
@@ -448,7 +448,7 @@ def lime_values_per_class(
             fis[activity].append(fi)
 
     # Let's calculate the average of the feature importance for each activity
-    columns = [f"feature {i}" for i in range(num_features)]
+    columns = [f"f-{i}" for i in range(num_features)]
     for activity in activities:
         fi_class = np.array(fis[activity])
         fi_class = np.mean(fi_class, axis=0)
