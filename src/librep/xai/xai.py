@@ -387,13 +387,14 @@ def calc_lime_values(
 ############################################################################################################
 def lime_values_per_class(
     lime_values: List[Dict[str, Any]],
-    dataset: str,
+    dst_train: str,
+    dst_test: str,
     reduce: str,
     model_name: str,
     activities: List[int],
     standartized_codes: Dict[int, str],
     num_features: int = 24,
-    remove_misclassified: bool = True,
+    remove_misclassified: bool = False,
 ) -> pd.DataFrame:
     """This function calculates the lime values for each feature, for each activity. For each activity,
     the lime values from a subset are the absolute average of the feature importances of all samples in the subset.
@@ -403,8 +404,10 @@ def lime_values_per_class(
     ----------
     lime_values: List[Dict[str, Any]]
         The list of dictionaries containing the lime values for each sample in the test dataset
-    dataset: str
-        The name of the dataset
+    dst_train: str
+        The name of the train dataset
+    dst_test: str
+        The name of the test dataset
     reduce: str
         The name of the modality on which the dataset is reduced
     model_name: str
@@ -427,7 +430,7 @@ def lime_values_per_class(
     dfs = {activity: None for activity in activities}
 
     fis = {activity: [] for activity in activities}
-    for j, lime_value in enumerate(lime_values):
+    for _, lime_value in enumerate(lime_values):
         # Calculate the feature importance for the sample
         activity = lime_value["True class"]
         lime_predict = lime_value["LIME prediction"]
@@ -436,12 +439,13 @@ def lime_values_per_class(
         sample = np.array(sample)
         fi = np.abs(sample[:, 1])
         model_predict = lime_value["Model prediction"]
+
+        # If remove_misclassified is True, the samples misclassified by the model are removed
         if remove_misclassified:
-            fis[activity].append(fi)
-        else:
-            # Check if the model predicted correctly the sample
             if model_predict == activity:
                 fis[activity].append(fi)
+        else:
+            fis[activity].append(fi)
 
     # Let's calculate the average of the feature importance for each activity
     columns = [f"feature {i}" for i in range(num_features)]
@@ -450,7 +454,8 @@ def lime_values_per_class(
         fi_class = np.mean(fi_class, axis=0)
         df = pd.DataFrame([fi_class], columns=columns)
         df["Classifier"] = model_name
-        df["Dataset"] = dataset
+        df["Train"] = dst_train
+        df["Test"] = dst_test
         df["reduce on"] = reduce
         df["activity"] = standartized_codes[activity]
         dfs[activity] = df
@@ -463,13 +468,14 @@ def lime_values_per_class(
 
 def lime_values_per_feature(
     lime_values: List[Dict[str, Any]],
-    dataset: str,
+    dst_train: str,
+    dst_test: str,
     reduce: str,
     model_name: str,
     activities: List[int],
     standartized_codes: Dict[int, str],
     num_features: int = 24,
-    remove_misclassified: bool = True,
+    remove_misclassified: bool = False,
 ) -> pd.DataFrame:
     """This function calculates the lime values for each feature, for each activity. For each activity,
     the lime values from a subset are the absolute average of the feature importances of all samples in the subset.
@@ -479,8 +485,10 @@ def lime_values_per_feature(
     ----------
     lime_values: List[Dict[str, Any]]
         The list of dictionaries containing the lime values for each sample in the test dataset
-    dataset: str
-        The name of the dataset
+    dst_train: str
+        The name of the train dataset
+    dst_test: str
+        The name of the test dataset
     reduce: str
         The name of the modality on which the dataset is reduced
     model_name: str
@@ -502,7 +510,8 @@ def lime_values_per_feature(
 
     df = lime_values_per_class(
         lime_values,
-        dataset,
+        dst_train,
+        dst_test,
         reduce,
         model_name,
         activities,
@@ -513,13 +522,14 @@ def lime_values_per_feature(
 
     dfs = []
     df.drop(columns=["activity"], inplace=True)
-    for (classifier, dataset, reduce), sub_df in df.groupby(
-        ["Classifier", "Dataset", "reduce on"]
+    for (classifier, dst_train, dst_test, reduce), sub_df in df.groupby(
+        ["Classifier", "Train", "Test", "reduce on"]
     ):
         # Let's sum all lines
         sub_df = sub_df.sum(axis=0).to_frame().T
         sub_df["Classifier"] = classifier
-        sub_df["Dataset"] = dataset
+        sub_df["Train"] = dst_train
+        sub_df["Test"] = dst_test
         sub_df["reduce on"] = reduce
         dfs.append(sub_df)
 
