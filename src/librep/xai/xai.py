@@ -273,18 +273,6 @@ def shap_values_per_feature(
             [np.abs(shap_values[j][:, i]).mean() for j in range(len(shap_values))]
         )
 
-
-    # fi = {
-    #     f"feature {i}": np.sum(
-    #         [
-    #             np.mean(np.abs(shap_values[j][:, i]))
-    #             for j, activity in enumerate(activities)
-    #         ]
-    #     )
-    #     for i in range(num_features)
-    # }
-
-    # df = pd.DataFrame(fi, index=[0])
     df = pd.DataFrame(values, index=[0])
     return df
 
@@ -308,18 +296,17 @@ def shap_values_per_class(shap_values, activities: List[int]) -> pd.DataFrame:
 
     # Define the number of features
     num_features = shap_values[0].shape[1]
-
-    keys = ["activity"] + [f"feature {i}" for i in range(num_features)]
-
-    fi = {key: None for key in keys}
     fis = []
+    values = {f'feature {i}': 0 for i in range(num_features)}
     for j, activity in enumerate(activities):
-        fi["activity"] = activity
+        values = {f'feature {i}': 0 for i in range(num_features)}
         for i in range(num_features):
-            fi[f"feature {i}"] = np.mean(np.abs(shap_values[j][:, i]))
-        fis.append(fi.copy())
+            values[f'feature {i}'] = np.abs(shap_values[j][:, i]).mean()
+        values["activity"] = activity
+        fis.append(values)
 
     df = pd.DataFrame(fis)
+
     return df
 
 
