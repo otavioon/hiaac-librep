@@ -32,7 +32,7 @@ def load_dataset(
     dst_test: str,
     reduce_on: str,
     normalization: str = None,
-    path: Path = Path("../reducer_experiments/results/execution/transformed_data"),
+    path: Path = Path(),
 ) -> Tuple[PandasMultiModalDataset, PandasMultiModalDataset]:
     """This function loads the dataset from the path. In particular, it loads the train and test files from the path:
     results/execution/output_files/reduced_data/{dataset_name}-{reduce_on}.
@@ -244,9 +244,9 @@ def calc_shap_values(model, test: PandasMultiModalDataset) -> np.ndarray:
 # Functions to filter the SHAP values
 ############################################################################################################
 def shap_values_per_feature(
-    shap_values, activities: List[int]
+    shap_values,
 ) -> pd.DataFrame:
-    """This function calculates the shap values for each feature, for each activity.
+    """This function calculates the shap values for each feature.
     For each activity, the shap values from a subset are the absolute average of the shap values of all samples in the subset.
     After that, the feature importance for each feature are the sum of the shap values of all activities.
 
@@ -254,9 +254,6 @@ def shap_values_per_feature(
     ----------
     shap_values: np.ndarray
         The shap values for each sample in the test dataset
-    activities: List[int]
-        The list of activities
-
 
     Returns
     -------
