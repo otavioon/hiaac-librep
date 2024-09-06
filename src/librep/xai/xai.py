@@ -569,7 +569,7 @@ def calc_oracle_values(
     accuracies = []
     for dim in range(latent_dim):
         train, test = load_dataset(
-            dst_train, dst_test, reduce, normalization=None, path=Path(data_path)
+            dst_train, dst_test, reduce, normalization=normalization, path=Path(data_path)
         )
         if columns_to_remove != []:
             train.X = np.delete(train.X, columns_to_remove, axis=1)
